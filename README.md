@@ -121,21 +121,6 @@ The deployment provides several useful outputs:
 - Security Group ID
 - EKS Cluster Endpoint
 
-## Security Considerations
-
-- All sensitive data should be stored in `.tfvars` files (not committed to version control)
-- Use of encryption for S3 backend
-- Implementation of least privilege principle for IAM roles
-- Security groups with minimal required access
-
-## Best Practices
-
-- Use workspaces for different environments
-- Regular state backup
-- Code review before applying changes
-- Maintain proper documentation
-- Use consistent naming conventions
-
 ## License
 
 This project is proprietary and confidential.
