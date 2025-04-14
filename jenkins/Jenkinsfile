@@ -2,19 +2,19 @@ pipeline {
     agent { label 'jenkins-agent'}
 
     environment {
+        TF_IN_AUTOMATION = "true"
         AWS_REGION = 'eu-west-1'
     }
 
-    environment {
+    stages {
+
         stage("Checkout") {
             steps {
                 // Checkout source code from git
-                git branch: 'main', url: 'https://github.com/chris-zano/terraform_project_1.git'
+                git branch: 'main', url: 'https://github.com/chris-zano/terraform.git'
             }
         }
-    }
 
-    stages {
         stage('Install Terraform') {
             steps {
                 script {
