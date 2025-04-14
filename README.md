@@ -20,7 +20,9 @@ terraform_project_1/
 ├── variables.tf
 ├── outputs.tf
 ├── provider.tf
-└── backend.tf
+├── backend.tf
+├── terraform.tfvars
+└── terraform.tfbackend
 ```
 
 ## Prerequisites
@@ -28,98 +30,85 @@ terraform_project_1/
 - Terraform >= 1.11.3
 - AWS CLI configured with appropriate credentials
 - Jenkins (for CI/CD pipeline)
-- S3 bucket for Terraform state (specified in backend.tf)
+- S3 bucket for Terraform state
 
-## Modules
+## Configuration Files
 
-### VPC Module
-- Creates a VPC with public and private subnets
-- Configures Internet Gateway and routing tables
-- Supports multiple availability zones
+### Backend Configuration (terraform.tfbackend)
+```hcl
+bucket  = "********"
+key     = "********
+region  = "********"
+encrypt = true
+use_lockfile = true
+```
 
-### EC2 Module
-- Deploys EC2 instances with customizable configurations
-- Includes user data script for Docker installation
-- Supports multiple security groups
-
-### Security Group Module
-- Creates customizable security groups
-- Supports dynamic ingress and egress rules
-- Configurable per environment
-
-### IAM Module
-- Sets up IAM roles for EKS cluster
-- Configures node group permissions
-- Implements least privilege principle
-
-### EKS Module
-- Deploys managed Kubernetes cluster
-- Configures worker node groups
-- Sets up cluster security groups
-
-## Configuration
-
-### Required Variables
+### Variables Configuration (terraform.tfvars)
 ```hcl
 vpc_cidr             = "10.0.0.0/16"
 public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
 private_subnet_cidrs = ["10.0.101.0/24", "10.0.102.0/24"]
-availability_zones   = ["eu-west-1a", "eu-west-1b"]
+availability_zones   = ["region1a", "region1b"]
 environment         = "dev"
-```
-
-### Backend Configuration
-The project uses an S3 backend for state management:
-```hcl
-terraform {
-  backend "s3" {
-    bucket  = "terraform-backend-bucket-niico"
-    key     = "terraform/terraform.tfstate"
-    region  = "eu-west-1"
-    encrypt = true
-  }
-}
+ami_id             = "ami-name"
+instance_type      = "instance-type"
+key_name           = "key-pair-name"
 ```
 
 ## Usage
 
-1. Initialize Terraform:
+1. Initialize Terraform with backend configuration:
 ```bash
-terraform init
+terraform init -backend-config="terraform.tfbackend"
 ```
 
 2. Review the execution plan:
 ```bash
-terraform plan
+terraform plan -var-file=terraform.tfvars
 ```
 
 3. Apply the configuration:
 ```bash
-terraform apply
+terraform apply -var-file=terraform.tfvars
 ```
 
 4. To destroy the infrastructure:
 ```bash
-terraform destroy
+terraform destroy -var-file=terraform.tfvars
 ```
 
 ## CI/CD Pipeline
 
-The project includes a Jenkins pipeline configuration that:
+The project includes a Jenkins pipeline that:
 - Installs required tools
-- Initializes Terraform
+- Initializes Terraform with backend configuration
 - Validates configurations
-- Plans and applies changes
+- Plans and applies changes using tfvars
 - Outputs results
 
 ## Outputs
 
-The deployment provides several useful outputs:
+The deployment provides:
 - VPC ID
 - Public and Private Subnet IDs
 - EC2 Instance ID and IP
 - Security Group ID
 - EKS Cluster Endpoint
+
+## Security Considerations
+
+- All sensitive data should be stored in `.tfvars` files (not committed to version control)
+- Backend configuration should be secured and encrypted
+- Use of least privilege principle for IAM roles
+- Security groups with minimal required access
+
+## Best Practices
+
+- Use separate tfvars files for different environments
+- Regular state backup
+- Code review before applying changes
+- Maintain proper documentation
+- Use consistent naming conventions
 
 ## License
 

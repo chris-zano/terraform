@@ -1,47 +1,39 @@
 variable "vpc_cidr" {
-  description = "CIDR block for the VPC"
+  description = "CIDR block for the VPC (10.0.0.0/16 provides 65,536 IP addresses)"
   type        = string
-  default     = "10.0.0.0/16"
 }
 
 variable "public_subnet_cidrs" {
-  description = "CIDR blocks for public subnets"
+  description = "CIDR blocks for public subnets across multiple AZs"
   type        = list(string)
-  default     = ["10.0.1.0/24", "10.0.2.0/24"]
 }
 
 variable "private_subnet_cidrs" {
-  description = "CIDR blocks for private subnets"
+  description = "CIDR blocks for private subnets across multiple AZs"
   type        = list(string)
-  default     = ["10.0.101.0/24", "10.0.102.0/24"]
 }
 
 variable "availability_zones" {
-  description = "Availability zones for subnets"
+  description = "AWS availability zones in eu-west-1 region"
   type        = list(string)
-  default     = ["eu-west-1a", "eu-west-1b"]
 }
 
 variable "environment" {
-  description = "Environment tag (e.g., dev, staging, prod)"
+  description = "Environment name for resource tagging and identification (dev/staging/prod)"
   type        = string
-  default     = "dev"
 }
 
 variable "ami_id" {
-  description = "Ubuntu 24.04 LTS AMI ID"
+  description = "Ubuntu 24.04 LTS AMI ID for eu-west-1 region"
   type        = string
-  default     = "ami-0df368112825f8d8f"
 }
 
 variable "instance_type" {
-  description = "EC2 instance type"
+  description = "EC2 instance type (t3.micro is free tier eligible)"
   type        = string
-  default     = "t2.micro"
 }
 
 variable "key_name" {
-  description = "SSH key pair name"
+  description = "Name of the SSH key pair for EC2 instance access"
   type        = string
-  default     = "lab-key-pair"
 }
