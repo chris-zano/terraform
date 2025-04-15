@@ -47,7 +47,7 @@ variable "max_size" {
   default     = 3
 }
 
-variable "node_role_arn" {
+variable "node_group_role_arn" {
   description = "IAM role ARN for EKS worker nodes"
   type        = string
 }

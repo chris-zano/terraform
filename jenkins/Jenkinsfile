@@ -1,10 +1,6 @@
 pipeline {
     agent { label 'terraform-agent'}
 
-    environment {
-        AWS_REGION = 'eu-west-1'
-    }
-
     stages {
 
         stage("Checkout") {
@@ -14,16 +10,27 @@ pipeline {
             }
         }
 
-        stage('Install Terraform') {
+        stage("Create terraform.tfbackend") {
             steps {
-                script {
-                    // Ensure Terraform is installed in the environment
-                    sh '''
-                    wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-                    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-                    sudo apt update && sudo apt install terraform
-                    '''
-                }
+               withCredentials(
+                string[credentialsId: 'bucket', variable: 'BUCKET'],
+                string[credentialsId: 'key', variable: 'KEY'],
+                string[credentialsId: 'region', variable: 'REGION'],
+                string[credentialsId: 'ami_id', variable: 'AMI_ID'],
+                string[credentialsId: 'key_pair_name', variable: 'KEY_PAIR_NAME'],
+                ) {
+                    sh 'echo "bucket = $BUCKET" > terraform.tfbackend'
+                    sh 'echo "key = $KEY" >> terraform.tfbackend'
+                    sh 'echo "region = $REGION" >> terraform.tfbackend'
+                    sh 'echo "ami_id = $AMI_ID" >> terraform.tfvars'
+                    sh 'echo "insance_type = t3.micro" >> terraform.tfvars'
+                    sh 'echo "key_name = $KEY_PAIR_NAME" >> terraform.tfvars'
+                    sh 'echo "environment = \"dev\"" >> terraform.tfvars'
+                    sh 'echo "availability_zones = [${REGION}a, ${REGION}b]" >> terraform.tfvars'
+                    sh 'echo "vpc_cidr = \"10.0.0.0/16\"" >> terraform.tfvars'
+                    sh 'echo "public_subnet_cidrs = [\"10.0.1.0/24\", \"10.0.2.0/24\"]" >> terraform.tfvars'
+                    sh 'echo "private_subnet_cidrs = [\"10.0.101.0/24\", \"10.0.102.0/24\"]" >> terraform.tfvars'
+               }
             }
         }
 
@@ -32,7 +39,7 @@ pipeline {
                 script {
                     // Initialize Terraform with backend configuration
                     sh '''
-                    terraform init
+                    terraform init -backend-config="terraform.tfbackend"
                     '''
                 }
             }
@@ -43,7 +50,7 @@ pipeline {
                 script {
                     // Generate and show an execution plan
                     sh '''
-                    terraform plan
+                    terraform plan -var-file=terraform.tfvars
                     '''
                 }
             }
@@ -86,6 +93,8 @@ pipeline {
     post {
         always {
             // Clean workspace
+            sh "rm -rf terraform.tfbackend terraform.tfvars"
+            deleteDir()
             cleanWs()
         }
     }

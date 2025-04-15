@@ -17,7 +17,7 @@ module "vpc" {
 module "ec2" {
   source = "./modules/ec2"
 
-  ami_id = var.ami_id
+  ami_id             = var.ami_id
   instance_type      = var.instance_type
   key_name           = var.key_name
   subnet_id          = module.vpc.public_subnet_ids[0]
@@ -67,21 +67,18 @@ module "security_group" {
 module "iam" {
   source = "./modules/iam"
 
-  eks_role_name           = "eks-cluster-role"
-  node_group_role_name    = "eks-node-group-role"
+  eks_role_name        = "eks-cluster-role"
+  node_group_role_name = "eks-node-group-role"
 }
 
 module "eks" {
-  source             = "./modules/eks"
-  cluster_name       = "main-eks-cluster"
-  vpc_id             = module.vpc.vpc_id
-  subnet_ids         = module.vpc.public_subnet_ids
-  eks_role_arn       = module.iam.eks_role_arn
-  node_group_name    = "main-eks-node-group"
-  node_role_arn      = module.iam.node_group_role_arn
-  node_group_instance_type = "t3.micro"
-  tags               = {
-    Name        = "EKS Cluster"
-    Environment = var.environment
-  }
+  source = "./modules/eks"
+
+  cluster_name             = "my-eks-cluster"
+  vpc_id                   = module.vpc.vpc_id
+  subnet_ids               = module.vpc.public_subnet_ids
+  eks_role_arn             = module.iam.eks_role_arn
+  node_group_name          = "my-node-group"
+  node_group_instance_type = "t3.medium"
+  node_group_role_arn      = module.iam.node_group_role_arn
 }

@@ -1,47 +1,22 @@
-resource "aws_eks_cluster" "this" {
-  name     = var.cluster_name
-  role_arn = var.eks_role_arn
-  vpc_config {
-    subnet_ids = var.subnet_ids
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 20.0"
+  cluster_version = "1.29"
+  cluster_endpoint_public_access = true
+  cluster_name = var.cluster_name
+  vpc_id                   = var.vpc_id
+  subnet_ids               = var.subnet_ids
+  eks_managed_node_groups = {
+    default_node_group = {
+      desired_capacity = 2
+      max_capacity     = 3
+      min_capacity     = 1
+      instance_types = ["t3.micro"]
+      iam_role_arn = var.node_group_role_arn
+    }
   }
-
-  tags = var.tags
-}
-
-resource "aws_eks_node_group" "this" {
-  cluster_name    = aws_eks_cluster.this.name
-  node_group_name = var.node_group_name
-  node_role_arn   = var.node_role_arn
-  subnet_ids      = var.subnet_ids
-  instance_types  = [var.node_group_instance_type]
-
-  scaling_config {
-    desired_size = var.desired_capacity
-    min_size     = var.min_size
-    max_size     = var.max_size
+  tags = {
+    Environment = "dev"
+    Terraform   = "true"
   }
-
-  tags = var.tags
-}
-
-resource "aws_security_group" "eks" {
-  name        = "eks-sg"
-  description = "Security group for EKS nodes"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = var.tags
 }
