@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'terraform-agent'}
+    agent { label 'terraform'}
 
     stages {
 
@@ -10,49 +10,25 @@ pipeline {
             }
         }
 
-        stage("Create terraform.tfbackend") {
+        stage("Run Terraform init with cli arguments") {
             steps {
-               withCredentials(
-                string[credentialsId: 'bucket', variable: 'BUCKET'],
-                string[credentialsId: 'key', variable: 'KEY'],
-                string[credentialsId: 'region', variable: 'REGION'],
-                string[credentialsId: 'ami_id', variable: 'AMI_ID'],
-                string[credentialsId: 'key_pair_name', variable: 'KEY_PAIR_NAME'],
-                ) {
-                    sh 'echo "bucket = $BUCKET" > terraform.tfbackend'
-                    sh 'echo "key = $KEY" >> terraform.tfbackend'
-                    sh 'echo "region = $REGION" >> terraform.tfbackend'
-                    sh 'echo "ami_id = $AMI_ID" >> terraform.tfvars'
-                    sh 'echo "insance_type = t3.micro" >> terraform.tfvars'
-                    sh 'echo "key_name = $KEY_PAIR_NAME" >> terraform.tfvars'
-                    sh 'echo "environment = \"dev\"" >> terraform.tfvars'
-                    sh 'echo "availability_zones = [${REGION}a, ${REGION}b]" >> terraform.tfvars'
-                    sh 'echo "vpc_cidr = \"10.0.0.0/16\"" >> terraform.tfvars'
-                    sh 'echo "public_subnet_cidrs = [\"10.0.1.0/24\", \"10.0.2.0/24\"]" >> terraform.tfvars'
-                    sh 'echo "private_subnet_cidrs = [\"10.0.101.0/24\", \"10.0.102.0/24\"]" >> terraform.tfvars'
-               }
-            }
-        }
-
-        stage('Terraform Init') {
-            steps {
-                script {
-                    // Initialize Terraform with backend configuration
+                withCredentials([file(credentialsId: 'tfbackend', variable: 'tfbackend')]) {
+                    sh "cp $tfbackend terraform.tfbackend && chmod 600 terraform.tfbackend"
                     sh '''
                     terraform init -backend-config="terraform.tfbackend"
                     '''
-                }
+                } 
             }
         }
 
         stage('Terraform Plan') {
             steps {
-                script {
-                    // Generate and show an execution plan
+                withCredentials([file(credentialsId: 'tfvars', variable: 'tfvars')]) {
                     sh '''
-                    terraform plan -var-file=terraform.tfvars
+                    cp $tfvars terraform.tfvars && chmod 600 terraform.tfvars
+                    terraform plan -var-file=terraform.tfvars -out=terraform.tfplan
                     '''
-                }
+                }        
             }
         }
         
@@ -71,9 +47,12 @@ pipeline {
             steps {
                 script {
                     // Apply the plan to provision resources
+                    withCredentials([file(credentialsId: 'tfvars', variable: 'tfvars')]) {
                     sh '''
-                    terraform apply -auto-approve
+                    cp $tfvars terraform.tfvars && chmod 600 terraform.tfvars
+                    terraform apply terraform.tfplan -auto-approve
                     '''
+                }
                 }
             }
         }
@@ -93,7 +72,6 @@ pipeline {
     post {
         always {
             // Clean workspace
-            sh "rm -rf terraform.tfbackend terraform.tfvars"
             deleteDir()
             cleanWs()
         }
